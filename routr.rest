@@ -1,0 +1,22 @@
+GET http://localhost:3000/tasks
+
+###
+
+POST http://localhost:3000/tasks
+Content-Type: application/json
+
+{
+    "text": "Математика",
+    "done": false,
+    "description": "Задание 3",
+    "deadline": "21.12.22",
+    "date": "20.12.22"
+}
+###
+DELETE http://localhost:3000/tasks/65327c0489f6af016b4e1bf9
+
+### 
+
+GET http://localhost:3000/tasks/65326f0a0d56a11b5ec628cc
+ 
+
