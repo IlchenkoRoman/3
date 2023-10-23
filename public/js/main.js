@@ -5,44 +5,50 @@ const textAreaInput = document.querySelector('#textAreaInput')
 const dateInput = document.querySelector('#dateInput')
 const searchEngine = document.querySelector("#search-engine")
 
+
 let tasks = []
 
-if(localStorage.getItem('tasks')){
-    tasks = JSON.parse(localStorage.getItem('tasks'))
+
+async function getTasks() {
+    tasks = []
+    const response = await fetch("/tasks", {
+        method: "GET",
+        headers: { "Accept": "application/json" }
+    })
+    if (response.ok === true) {
+        const tasks1 = await response.json();
+        let arr = []
+        tasks1.forEach(el => {
+            tasks.push(el)
+        })
+    }
+    tasks.forEach(e =>{
+        render(e)
+    })
+    
 }
+
+getTasks()
+
 
 const render = (task) => {
 
-    // async function getTasks() {
-    //     const response = await fetch("/", {
-    //         method: "GET",
-    //         headers: { "Accept": "application/json" }
-    //     });
-    //     if (response.ok === true) {
-    //         const tasks = await response.json();
-    //         users.forEach(e => {
-    //             console.log(e)
-    //         });
-    //     }
-    // }
-
-    // getTasks()
 
     let classDone
-    if(task.done == false){
+    if (task.done == false) {
         classDone = "task-title"
-    }else {
+    } else {
         classDone = "task-title task-title--done"
     }
 
     let now = new Date().toLocaleDateString()
     let state = 'none'
-    if(task.deadline != '' && now > task.deadline){
+    if (task.deadline != '' && now > task.deadline) {
         state = ''
     }
 
 
-    const taskHTML = `<li id="${task.id}" class="list-group-item d-flex justify-content-between task-item">
+    const taskHTML = `<li id="${task._id}" class="list-group-item d-flex justify-content-between task-item">
                                 <div class='visible d-flex'>
                                     <div><span class="${classDone} main-text">${task.text}</span></div>
                                         <div class="task-item__buttons">
@@ -64,55 +70,52 @@ const render = (task) => {
 
     tasksList.insertAdjacentHTML('beforeend', taskHTML)
 
+    checkEmptyList()
 }
-
-tasks.forEach((e) => {
-    render(e)
-})
 
 checkEmptyList()
 
 function checkEmptyList() {
-    if(tasks.length === 0){
-       const emptyList = `<li id="emptyList" class="list-group-item empty-list">
+    if (tasks.length === 0) {
+        const emptyList = `<li id="emptyList" class="list-group-item empty-list">
                                 <img src="./img/images.png" alt="Empty" width="48" class="mt-3">
                                 <div class="empty-list__title">Список дел пуст</div>
                             </li>`
-       tasksList.insertAdjacentHTML('afterbegin', emptyList)
+        tasksList.insertAdjacentHTML('afterbegin', emptyList)
     }
 
-    if(tasks.length > 0){
+    if (tasks.length > 0) {
         const emptyListCounter = document.querySelector('#emptyList')
         emptyListCounter ? emptyListCounter.remove() : null
     }
 }
 
-const saveLocalStorege = () => {
-    localStorage.setItem('tasks', JSON.stringify(tasks))
-}
 
-const addTask = (e) =>{
-
-    e.preventDefault();
+const addTask = (e) => {
 
     const taskText = taskInput.value
     const taskDescription = textAreaInput.value
-    const taskDate = dateInput.value.replace(/0?(\d+)\-0?(\d+)\-(\d+)/, '$3.$2.$1');
-    const dateOfCreation = new Date().toLocaleDateString();
-    const newTask = {
-        id: Date.now(),
-        text: taskText,
-        done: false,
-        description: taskDescription,
-        deadline: taskDate,
-        date: dateOfCreation
+    const taskDate = dateInput.value.replace(/0?(\d+)\-0?(\d+)\-(\d+)/, '$3.$2.$1')
+    const dateOfCreation = new Date().toLocaleDateString()
+
+    async function createTask(text, description, deadline, date) {
+   
+        const response = await fetch("/tasks", {
+            method: "POST",
+            headers: { "Accept": "application/json", "Content-Type": "application/json" },
+            body: JSON.stringify({
+                text: taskText,
+                done: false,
+                description: taskDescription,
+                deadline: taskDate,
+                date: dateOfCreation
+            })
+        });
     }
 
-    tasks.push(newTask)
+    createTask(taskText, taskDescription, taskDate, dateOfCreation)
 
-    saveLocalStorege()
-
-    render(newTask)
+    getTasks()
 
     taskInput.value = ''
 
@@ -126,42 +129,44 @@ const addTask = (e) =>{
 }
 
 const deleteTask = (e) => {
-    if(e.target.dataset.action == 'delete'){
+    if (e.target.dataset.action == 'delete') {
         const parent = e.target.closest('.list-group-item')
-
         const id = parent.id
 
-        const index = tasks.findIndex((task) => {
-            if(task.id == id) {
+        async function deleteTaskDB(id) {
+            const response = await fetch("/tasks/" + id, {
+                method: "DELETE",
+                headers: { "Accept": "application/json" }
+            })
+        }
+
+    
+        tasks.findIndex((task) => {
+            if (task._id == id) {
+                deleteTaskDB(id)
                 return true
             }
         })
 
-        tasks.splice(index, 1)
-
-        saveLocalStorege()
-
         parent.remove()
-
         checkEmptyList()
     }
 }
 
 const doneTask = (e) => {
-    if(e.target.dataset.action == 'done'){
+    if (e.target.dataset.action == 'done') {
         const parent = e.target.closest('.list-group-item')
 
         const id = parent.id
 
         const item = tasks.find((task) => {
-            if (task.id == id){
+            if (task._id == id) {
                 return true
             }
         })
 
         item.done = !item.done
 
-        saveLocalStorege()
 
         const doneParent = parent.querySelector('.task-title')
 
@@ -170,17 +175,17 @@ const doneTask = (e) => {
 }
 
 const showHidenInfo = (e) => {
-    if(e.target.dataset.action != 'done' && e.target.dataset.action != 'delete' && e.target.id != 'emptyList'){
-    const parent = e.target.closest('.list-group-item')
-    const taskTitle = parent.querySelector(".hiden")
-    const emptyDescription = taskTitle.querySelector(".decsription")
-    const emptyDate = taskTitle.querySelector(".date")
-    taskTitle.classList.toggle('none')
-    const id = parent.id
+    if (e.target.dataset.action != 'done' && e.target.dataset.action != 'delete' && e.target.id != 'emptyList') {
+        const parent = e.target.closest('.list-group-item')
+        const taskTitle = parent.querySelector(".hiden")
+        const emptyDescription = taskTitle.querySelector(".decsription")
+        const emptyDate = taskTitle.querySelector(".date")
+        taskTitle.classList.toggle('none')
+        const id = parent.id
         tasks.forEach((e) => {
-            if(e.id == id && e.description == ''){
+            if (e.id == id && e.description == '') {
                 emptyDescription.classList.add('none')
-            }if(e.id == id && e.deadline == ''){
+            } if (e.id == id && e.deadline == '') {
                 emptyDate.classList.add('none')
             }
         })
@@ -190,19 +195,20 @@ const showHidenInfo = (e) => {
 const searching = () => {
     let val = searchEngine.value.trim()
     let liItems = document.querySelectorAll('#tasksList li')
-    if(val != '') {
+    if (val != '') {
         liItems.forEach((e) => {
-            if(e.innerText.toLowerCase().search(val.toLowerCase()) == -1){
+            if (e.innerText.toLowerCase().search(val.toLowerCase()) == -1) {
                 e.classList.add('none')
-            }else{
+            } else {
                 e.classList.remove('none')
             }
         })
-    }else{
+    } else {
         liItems.forEach((e) => {
-                e.classList.remove('none')
-    })
-}}
+            e.classList.remove('none')
+        })
+    }
+}
 
 
 

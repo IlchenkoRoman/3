@@ -18,5 +18,15 @@ DELETE http://localhost:3000/tasks/65327c0489f6af016b4e1bf9
 ### 
 
 GET http://localhost:3000/tasks/65326f0a0d56a11b5ec628cc
- 
 
+
+###
+
+
+PATCH  http://localhost:3000/tasks/65329a73405e1ab3582fc6e8
+
+Content-Type: application/json
+
+{
+    "done": true
+}

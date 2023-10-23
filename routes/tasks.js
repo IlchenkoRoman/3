@@ -7,6 +7,7 @@ router.get('/', async (req, res) => {
    try {
         const tasks = await Task.find()
         res.json(tasks)
+
    }catch (err) {
         res.status(500).json({message: err.message})
    }
@@ -16,8 +17,6 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) =>    {
     const { text, done, description, deadline, date  } = req.body
     const task = new Task({text, done, description, deadline, date})
-
-    console.log(task)
 
     try {
         const newTask = await task.save()
@@ -30,8 +29,14 @@ router.post('/', async (req, res) =>    {
 
 //Изменить
 
-router.patch('/:id', getTasks, (req, res) => {
-    
+router.patch('/:id', getTasks, async (req, res) => {
+    res.task.done = req.body.done
+    try{
+        const updatedTask = await res.task.save()
+        res.json(updatedTask)
+    } catch (err){
+        res.status(400).json({message: err.message})
+    }
 })
 
 
